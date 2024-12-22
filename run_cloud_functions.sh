@@ -21,7 +21,7 @@ yc serverless function version create \
 
 yc serverless trigger create timer \
   --name activity-tabel-trigger \
-  --cron-expression '0,30 * ? * * *' \
+  --cron-expression '*/10 * ? * * *' \
   --invoke-function-name activity-tabel \
   --invoke-function-service-account-id $SERVICE_ACCOUNT_ID
 
