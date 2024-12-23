@@ -1,11 +1,9 @@
-from asyncpg.pool import PoolConnectionProxy
 from fastapi import Depends, Query
 from starlette import status
 
 from api.endpoints.router import base_router
 from api.shemas.repository import RepositoryModel
-from core.db_manger import DBManager
-from core.postgres_db import get_db
+from database.db_manger import DBManager, get_db_manager
 
 
 @base_router.get(
@@ -21,7 +19,6 @@ async def get_top100(
             le=100,
             description="Количество записей в ответе. Можно получить меньше 100, но не больше"
         ),
-        conn: PoolConnectionProxy = Depends(get_db)
+        db: DBManager = Depends(get_db_manager)
 ):
-    db = DBManager(conn)
     return await db.get_repositories(limit=limit)

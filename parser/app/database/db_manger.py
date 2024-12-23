@@ -1,10 +1,12 @@
 from datetime import date
 
 from asyncpg.pool import PoolConnectionProxy
+from fastapi import Depends
 
 from api.shemas.activity import ActivityModel
-from core.exceptions import DBError
+from utils.exceptions import CommonDBException
 from api.shemas.repository import RepositoryModel
+from database.postgres_db import get_db
 
 
 class DBManager:
@@ -16,7 +18,7 @@ class DBManager:
         try:
             sequence = await self.connection.fetch("SELECT * FROM top100 LIMIT $1", limit)
         except Exception as err:
-            raise DBError(err)
+            raise CommonDBException(str(err))
 
         return [
             RepositoryModel(
@@ -43,7 +45,7 @@ class DBManager:
                 f"{owner}/{repo}", owner
             )
         except Exception as err:
-            raise DBError(err)
+            raise CommonDBException(str(err))
 
         if len(sequence) == 1:
             return sequence[0]['id']
@@ -68,7 +70,7 @@ class DBManager:
             """
             sequence = await self.connection.fetch(query, repo_id, since, until, limit, offset)
         except Exception as err:
-            raise DBError(err)
+            raise CommonDBException(str(err))
 
         return [
             ActivityModel(
@@ -92,6 +94,10 @@ class DBManager:
                 repo_id
             )
         except Exception as err:
-            raise DBError(err)
+            raise CommonDBException(str(err))
 
         return sequence[0]['count_for_git_id']
+
+
+def get_db_manager(conn: PoolConnectionProxy = Depends(get_db)) -> DBManager:
+    return DBManager(conn)
