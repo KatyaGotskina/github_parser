@@ -3,10 +3,8 @@ import os
 import psycopg2
 from psycopg2 import pool
 import requests
-from dotenv import load_dotenv
 
 
-load_dotenv()
 postgresql_pool = psycopg2.pool.SimpleConnectionPool(
     1,  # min
     20,  # max
