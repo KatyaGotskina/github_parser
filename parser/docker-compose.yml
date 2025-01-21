@@ -1,13 +1,83 @@
+version: "3.8"
 services:
-  fast_api_app:
+  github_app:
     container_name: github_app
     build: .
     volumes:
-       - ./app:/app
+      - ./app:/app
     env_file:
       - .env
     ports:
-      - 8000:8000
-    # Для локальной разработки и тестирования достаточно --workers 1
+      - 8001:8000
     command: uvicorn main:create_app --workers 1 --host ${APP_HOST}
-    # restart: unless-stopped
+    networks:
+      - sirius_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/repos/top100"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus_config.yml"
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    depends_on:
+      - github_app
+    volumes:
+      - ./prometheus:/etc/prometheus
+    networks:
+      - sirius_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+    depends_on:
+      - github_app
+    networks:
+      - sirius_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  balancer:
+    image: nginx:1.27.2-alpine3.20
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./nginx:/etc/nginx/templates
+    depends_on:
+      - github_app
+    networks:
+      - sirius_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+
+networks:
+  sirius_network:
+    external: True

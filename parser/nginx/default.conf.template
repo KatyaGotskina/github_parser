@@ -1,0 +1,11 @@
+server {
+   listen 80;
+
+   location /api {
+      proxy_pass http://github_app:8000;
+   }
+
+   location / {
+            return 200 "OK";
+        }
+}
